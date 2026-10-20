@@ -227,7 +227,13 @@ const MEASURE_LINK = "apprelocator://measure";
   // 이미 열린 탭에서 # 뒤(측정값)만 바뀌면 브라우저가 다시 읽지 않으므로 직접 다시 그린다
   window.addEventListener("hashchange", () => location.reload());
   const FROM_LINK = !PC_DATA;
-  const D = clean(PC_DATA || fromHash());
+  const RAW = PC_DATA || fromHash();
+  const D = clean(RAW);
+  // '작동 원리' 쇼릴에도 같은 측정값을 넘긴다(주소의 # 뒤, 서버로 보내지지 않음)
+  if (D) {
+    const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(RAW)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    document.querySelectorAll('a[href="how-it-works.html"]').forEach(a => a.href = "how-it-works.html#d=" + b64);
+  }
   // 다시 재기: 웹에서는 웹으로, PC 에 만든 지도에서는 PC 지도로 다시 연다
   const measureHref = MEASURE_LINK + (location.protocol === "file:" ? "?view=local" : "");
   const GB = 1024 ** 3;
