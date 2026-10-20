@@ -37,6 +37,15 @@ h1, h2, h3, p { margin: 0; text-wrap: balance; }
 .btn.warn { border-color: var(--warn); color: var(--warn); }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn:focus-visible, .drive:focus-visible, .chip:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.btn.dl { text-decoration: none; border-color: var(--t); color: var(--t); font-weight: 700; }
+.dlver { font-family: var(--mono); font-weight: 500; font-size: .76rem; opacity: .85; }
+.dlbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: center; margin-bottom: 12px; padding: 12px 14px; border-radius: 14px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--t) 12%, var(--panel)), var(--panel)); border: 1px solid color-mix(in srgb, var(--t) 40%, var(--line)); }
+.dlbar strong { display: block; font-size: 1rem; }
+.dllinks { display: flex; flex-wrap: wrap; gap: 6px; }
+.dllinks a { text-decoration: none; }
+.dlbar .note { grid-column: 1 / -1; min-height: 0; }
+@media (max-width: 760px) { .dlbar { grid-template-columns: minmax(0, 1fr); } }
 .badge { display: inline-block; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
 .badge.real { color: var(--t); border-color: var(--t); }
 
@@ -129,11 +138,25 @@ details p { color: var(--muted); margin-top: 6px; }
     <h1>옮긴 앱은 <em id="hTarget">D:</em> 에서 그대로 실행·업데이트됩니다</h1>
     <span class="grow"></span>
     <span id="dataBadge" class="badge">예시 값</span>
+    <a class="btn dl" href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">⬇ 다운로드 <span class="dlver" data-ver></span></a>
     <button class="btn primary" id="playAll" type="button">▶ 전체 재생</button>
     <a class="pill" id="mapLink" href="index.html">사용 절차 지도</a>
     <a class="pill on" href="how-it-works.html" aria-current="page">작동 원리</a>
     <p class="sub">C: 에 쌓인 AI 앱·개발 도구의 프로그램과 데이터를 원하는 드라이브로 옮기면, 원래 자리에 남긴 '연결'을 따라 Windows 가 이어 주므로 앱은 아무것도 바꾸지 않고 그곳에서 동작합니다. 카드마다 직접 눌러 보세요.</p>
   </header>
+
+  <aside class="dlbar" aria-label="AppRelocator 다운로드">
+    <div class="dlmain">
+      <strong>AppRelocator 받기</strong>
+      <span class="lead">Windows 10·11 (x64) · 무료 · 관리자 권한 없이 설치 · <span data-ver-full>최신 버전</span></span>
+    </div>
+    <div class="dllinks">
+      <a class="btn primary" href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">⬇ 설치 파일 (Setup.exe)</a>
+      <a class="btn" href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-win-x64.zip">설치 없이 쓰기 (ZIP)</a>
+      <a class="btn" href="https://github.com/sysmetrix/app-relocator-guide/releases">모든 버전·변경 내역</a>
+    </div>
+    <p class="note">아직 코드 서명이 없어 처음 실행할 때 "Windows의 PC 보호" 창이 뜨면 <b>추가 정보 › 실행</b>을 누르세요. 릴리스 페이지에 파일별 SHA-256 이 있습니다.</p>
+  </aside>
 
   <main class="grid">
     <section class="p" style="--s:5" id="p1" aria-labelledby="h1">
@@ -461,6 +484,16 @@ details p { color: var(--muted); margin-top: 6px; }
    ["part", "일부", "프로그램 폴더 옮기기 — 미리보기·권한 확인까지, 실제 이동 뒤 실행은 아직"],
    ["no", "미확인", "실제 앱 업데이트 뒤 새 버전이 대상 드라이브에 쓰이는 것"],
   ].forEach(([c, t, b]) => $("status").insertAdjacentHTML("beforeend", `<div class="st"><span class="tag ${c}">${t}</span><span>${b}</span></div>`));
+
+  // ------------------------------------------------------------ 최신 버전 표시(공개 릴리스, 실패하면 그냥 둔다)
+  fetch("https://api.github.com/repos/sysmetrix/app-relocator-guide/releases/latest", { headers: { Accept: "application/vnd.github+json" } })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => {
+      if (!j || typeof j.tag_name !== "string" || !/^v?[0-9][0-9.]{0,15}$/.test(j.tag_name)) return;
+      const day = typeof j.published_at === "string" ? j.published_at.slice(0, 10) : "";
+      document.querySelectorAll("[data-ver]").forEach(e => e.textContent = j.tag_name);
+      document.querySelectorAll("[data-ver-full]").forEach(e => e.textContent = `최신 ${j.tag_name}${day ? " · " + day : ""}`);
+    }).catch(() => {});
 
   // ------------------------------------------------------------ 전체 재생: 화면을 넘기지 않고 카드를 차례로 강조(좁은 화면에서만 그 카드로 이동)
   const narrow = () => matchMedia("(max-width: 700px)").matches;

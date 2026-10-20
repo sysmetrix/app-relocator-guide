@@ -70,6 +70,8 @@ a.btn { text-decoration: none; display: inline-block; }
 .pages { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .pages .btn { border-radius: 99px; }
 .pages .btn.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.pages .btn.dl { margin-left: auto; border-color: var(--done); color: var(--done); font-weight: 600; }
+@media (max-width: 640px) { .pages .btn.dl { margin-left: 0; } }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; padding: 7px 16px; font-size: 0.92rem; }
 .btn:focus-visible, .node-head:focus-visible, .phase-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -159,6 +161,7 @@ a.btn { text-decoration: none; display: inline-block; }
   <nav class="pages" aria-label="안내 페이지">
     <a class="btn on" href="#" aria-current="page">사용 절차 지도</a>
     <a class="btn" href="how-it-works.html">작동 원리 — 옮긴 앱은 어떻게 실행·업데이트되나요?</a>
+    <a class="btn dl" href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">⬇ AppRelocator 다운로드 <span class="mono" data-ver></span></a>
   </nav>
   <header class="top">
     <div>
@@ -224,6 +227,11 @@ const MEASURE_LINK = "apprelocator://measure";
       return JSON.parse(new TextDecoder().decode(bytes));
     } catch (e) { return null; }
   };
+  // 최신 공개 버전 표시(실패하면 그냥 둔다)
+  fetch("https://api.github.com/repos/sysmetrix/app-relocator-guide/releases/latest", { headers: { Accept: "application/vnd.github+json" } })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && typeof j.tag_name === "string" && /^v?[0-9][0-9.]{0,15}$/.test(j.tag_name)) document.querySelectorAll("[data-ver]").forEach(e => e.textContent = j.tag_name); })
+    .catch(() => {});
   // 이미 열린 탭에서 # 뒤(측정값)만 바뀌면 브라우저가 다시 읽지 않으므로 직접 다시 그린다
   window.addEventListener("hashchange", () => location.reload());
   const FROM_LINK = !PC_DATA;
@@ -255,7 +263,7 @@ const MEASURE_LINK = "apprelocator://measure";
     facts.innerHTML = `<div class="facts-head"><strong>이 PC 를 분석해 볼까요?</strong></div>
       <p class="nodata">지금은 숫자 없는 일반 안내입니다. <b>이 PC 분석하기</b>를 누르면 설치된 AppRelocator 가 이 PC 의 앱별 용량·남은 공간·주의할 점을 재서 이 페이지에 채웁니다. 브라우저가 "AppRelocator 를 열까요?"라고 물으면 <b>열기</b>를 누르세요.</p>
       <div class="tools"><a class="btn primary" href="${measureHref}">이 PC 분석하기</a></div>
-      <p class="nodata">아무 반응이 없으면 AppRelocator 가 설치되지 않은 것입니다. 설치 파일: <span class="mono">github.com/sysmetrix/app-relocator/releases</span></p>`;
+      <p class="nodata">아무 반응이 없으면 AppRelocator 가 설치되지 않은 것입니다. <a href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">설치 파일 받기</a>(Windows 10·11, 관리자 권한 불필요) 후 다시 누르세요.</p>`;
   } else {
     const cells = [];
     cells.push({ k: `${D.systemDrive} 남은 공간`, v: size(D.systemFree), s: `전체 ${size(D.systemTotal)}`, cls: D.systemFree < 10 * GB ? "warn" : "" });

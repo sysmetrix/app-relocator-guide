@@ -33,7 +33,7 @@ E:\AppRelocator\
 
 ## 다른 PC 에서 처음
 1. 그 PC 에 AppRelocator 를 설치합니다.
-   - 설치 파일: https://github.com/sysmetrix/app-relocator/releases/latest
+   - 설치 파일: https://github.com/sysmetrix/app-relocator-guide/releases/latest
    - 설치 파일을 받을 수 없으면 드라이브의 `AppRelocator\_program\AppRelocator.exe` 를 실행한 뒤 위쪽의 **이 PC 에 설치**를 누릅니다(그래야 나중에 드라이브를 꺼낼 때 프로그램이 막지 않습니다).
    - "Windows 의 PC 보호" 창이 뜨면 **추가 정보 › 실행**(아직 코드 서명이 없어서 뜨는 창).
 2. 그 PC 에 Codex·Claude·Gemini 를 평소처럼 설치하고 한 번 로그인합니다. 앱 본체는 C: 에 두세요.
