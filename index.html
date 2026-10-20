@@ -1,0 +1,396 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>AppRelocator 사용 절차 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 위: 이 PC 측정값 → 단계 요약 노드 → 단계별 레인(노드 흐름) → 문제 해결.
+   숫자는 모두 AppRelocator 가 연 순간 이 PC 에서 잰 값(PC_DATA)이며, 데이터가 없으면 숫자 없이 일반 안내만 보인다. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #18212d;
+  --muted: #5b6676;
+  --line: #d5dbe3;
+  --accent: #1f5fbf;
+  --prep: #6b7380;
+  --move: #1f5fbf;
+  --clean: #12805c;
+  --ext: #7a4cc2;
+  --warn: #a35d00;
+  --warn-bg: #fff4e0;
+  --bad: #b3261e;
+  --bad-bg: #fdecea;
+  --done: #12805c;
+  --done-bg: #e6f4ee;
+  --chip: #eef1f5;
+  --font-display: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161d; --surface: #19202a; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3644;
+    --accent: #7fb0ff; --prep: #9aa3b0; --move: #7fb0ff; --clean: #5fd0a4; --ext: #b99af0;
+    --warn: #f0b45c; --warn-bg: #2d2416; --bad: #ff8a80; --bad-bg: #3a1d1b; --done: #5fd0a4; --done-bg: #16302a; --chip: #222b37;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161d; --surface: #19202a; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3644;
+  --accent: #7fb0ff; --prep: #9aa3b0; --move: #7fb0ff; --clean: #5fd0a4; --ext: #b99af0;
+  --warn: #f0b45c; --warn-bg: #2d2416; --bad: #ff8a80; --bad-bg: #3a1d1b; --done: #5fd0a4; --done-bg: #16302a; --chip: #222b37;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem); font-weight: 700; letter-spacing: -0.01em; }
+.lede { color: var(--muted); max-width: 70ch; margin: 8px 0 0; }
+.mono { font-family: var(--font-mono); font-size: 0.86em; }
+.eyebrow { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+.top { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; }
+.progress { min-width: 220px; flex: 0 1 320px; }
+.bar { height: 8px; border-radius: 99px; background: var(--chip); overflow: hidden; margin-top: 6px; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--done); transition: width .3s; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+button { font: inherit; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.86rem; }
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible, .node-head:focus-visible, .phase-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 이 PC 측정값 */
+.facts { margin-top: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.facts-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.facts-head strong { font-family: var(--font-display); }
+.facts-head span { color: var(--muted); font-size: 0.84rem; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
+.f { border-left: 3px solid var(--line); padding: 2px 0 2px 10px; min-width: 0; }
+.f .k { font-size: 0.8rem; color: var(--muted); }
+.f .v { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.f .s { font-size: 0.8rem; color: var(--muted); }
+.f.good { border-color: var(--done); } .f.warn { border-color: var(--warn); } .f.bad { border-color: var(--bad); }
+.nodata { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+
+.overview { display: flex; flex-wrap: wrap; align-items: stretch; margin: 22px 0 8px; }
+.phase-link { flex: 1 1 200px; min-width: 0; display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.overview .arrow { flex: 0 0 34px; display: grid; place-items: center; color: var(--muted); }
+.phase-dot { flex: 0 0 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: var(--surface); font-weight: 700; font-family: var(--font-display); }
+.phase-link strong { display: block; font-family: var(--font-display); font-size: 1rem; }
+.phase-link span { color: var(--muted); font-size: 0.84rem; }
+.phase-link .count { margin-left: auto; font-size: 0.8rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 860px) { .overview .arrow { flex-basis: 100%; height: 22px; transform: rotate(90deg); } }
+
+.lanes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-top: 28px; align-items: start; }
+@media (max-width: 1100px) { .lanes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .lanes { grid-template-columns: minmax(0, 1fr); } }
+.lane { min-width: 0; }
+.lane.dim { opacity: .6; }
+.lane-head { padding: 0 4px 10px; border-bottom: 3px solid var(--c); margin-bottom: 14px; }
+.lane-head h2 { font-size: 1.05rem; }
+.lane-head p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); }
+
+.flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.node { position: relative; min-width: 0; }
+.node:not(:last-child)::after { content: ""; position: absolute; left: 21px; top: 100%; height: 22px; width: 2px; background: var(--c); opacity: .55; }
+.node:not(:last-child)::before { content: ""; position: absolute; left: 17px; top: calc(100% + 15px); border: 5px solid transparent; border-top-color: var(--c); opacity: .75; z-index: 1; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.node.is-done .card { border-color: color-mix(in srgb, var(--done) 55%, var(--line)); }
+.node.kind-warn .card { border-color: color-mix(in srgb, var(--warn) 60%, var(--line)); }
+.node.skip .card { opacity: .65; }
+.node-head { width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; text-align: left;
+  background: none; border: 0; color: inherit; padding: 11px 12px; cursor: pointer; }
+.badge { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 0.78rem; font-weight: 700;
+  color: var(--c); border: 2px solid var(--c); background: var(--surface); font-variant-numeric: tabular-nums; }
+.node.kind-decision .badge { border-radius: 6px; transform: rotate(45deg); width: 24px; height: 24px; margin: 3px; }
+.node.kind-decision .badge b { transform: rotate(-45deg); }
+.node.is-done .badge { background: var(--done); border-color: var(--done); color: var(--surface); }
+.node-title { font-weight: 600; line-height: 1.4; }
+.node-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { font-size: 0.74rem; padding: 1px 8px; border-radius: 99px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.chip.good { background: var(--done-bg); color: var(--done); }
+.chev { color: var(--muted); transition: transform .2s; margin-top: 4px; }
+.node.open .chev { transform: rotate(180deg); }
+.detail { padding: 0 14px 14px 52px; display: none; }
+.node.open .detail { display: block; }
+.detail ol { margin: 6px 0 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.where { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+.where b { color: var(--ink); font-weight: 600; }
+.note { margin-top: 10px; font-size: 0.86rem; padding: 8px 10px; border-radius: 6px; background: var(--warn-bg); border-left: 3px solid var(--warn); }
+.measure { margin-top: 10px; font-size: 0.86rem; padding: 8px 10px; border-radius: 6px; background: var(--chip); border-left: 3px solid var(--c); }
+.branches { display: grid; gap: 8px; margin-top: 10px; }
+.branch { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; font-size: 0.88rem; }
+.branch > span:first-child { font-size: 0.72rem; font-weight: 700; padding: 1px 7px; border-radius: 4px; color: var(--surface); background: var(--c); white-space: nowrap; }
+.branch.no > span:first-child { background: var(--muted); }
+.check { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-size: 0.86rem; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--done); }
+
+.trouble { margin-top: 40px; }
+.trouble h2 { font-size: 1.15rem; margin-bottom: 4px; }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 14px; }
+.t { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; min-width: 0; }
+.t .sym { font-weight: 600; }
+.t .act { color: var(--muted); font-size: 0.9rem; }
+.t .act b { color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Codex · Claude · Gemini 데이터로 꽉 찬 C: 비우기</p>
+      <h1>AppRelocator 사용 절차 지도</h1>
+      <p class="lede">준비 → 옮기기 → C: 공간 비우기 순서로 진행합니다. 노드를 누르면 할 일과 누를 버튼이 펼쳐지고, 끝낸 노드에 체크하면 진행률이 올라갑니다(이 브라우저에만 저장).</p>
+    </div>
+    <div class="progress" aria-live="polite">
+      <div class="eyebrow">전체 진행</div>
+      <div><strong id="pct" class="num">0%</strong> <span id="cnt" class="mono"></span></div>
+      <div class="bar"><i id="barfill"></i></div>
+      <div class="tools">
+        <button class="btn" id="expandAll" type="button">모두 펼치기</button>
+        <button class="btn" id="collapseAll" type="button">모두 접기</button>
+        <button class="btn" id="reset" type="button">체크 초기화</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="facts" id="facts" aria-label="이 PC 측정값"></section>
+  <nav class="overview" id="overview" aria-label="단계 요약"></nav>
+  <main class="lanes" id="lanes"></main>
+
+  <section class="trouble" aria-labelledby="trouble-title">
+    <h2 id="trouble-title">문제가 생겼을 때</h2>
+    <p class="lede">원본은 항상 그대로입니다. 진행 창에 빨간 ✕ 와 "이렇게 해 보세요"가 뜨면 그 안의 버튼을 먼저 누르세요.</p>
+    <div class="tgrid" id="tgrid"></div>
+  </section>
+</div>
+
+<script>
+// AppRelocator 가 이 지도를 열 때 이 PC 에서 잰 값으로 바꿔 넣는다. 그대로 null 이면 숫자 없이 일반 안내만 보여 준다.
+const PC_DATA = /*PC_DATA*/null;
+
+(function () {
+  const D = PC_DATA;
+  const GB = 1024 ** 3;
+  const size = b => b >= GB ? (b / GB).toFixed(1) + " GB" : b >= 1024 ** 2 ? Math.round(b / 1024 ** 2) + " MB" : b > 0 ? Math.max(1, Math.round(b / 1024)) + " KB" : "0";
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const app = id => D && D.apps ? D.apps.find(a => a.id === id) : null;
+
+  // ---------------------------------------------------------------- 측정값으로 만든 판단
+  const apps = D ? D.apps : [];
+  const totalLocal = apps.reduce((s, a) => s + (a.installed ? a.local : 0), 0);
+  const target = D ? D.target : null;
+  const needed = totalLocal * 1.1 + 0.5 * GB;                 // 옮길 데이터 + 여유
+  const spaceOk = target ? target.free >= needed : null;
+  const detachable = target ? target.removable : null;        // null = 모름
+
+  // ---------------------------------------------------------------- 이 PC 측정값 패널
+  const facts = document.getElementById("facts");
+  if (!D) {
+    facts.innerHTML = `<div class="facts-head"><strong>일반 안내</strong></div>
+      <p class="nodata">이 지도에는 이 PC 의 측정값이 들어 있지 않습니다. 시작 메뉴의 <b>AppRelocator 사용 절차</b>나 앱의 도움말 › <b>절차 지도 열기</b>로 열면, 그 PC 에서 잰 앱별 용량·남은 공간·주의할 점이 들어간 지도로 열립니다.</p>`;
+  } else {
+    const cells = [];
+    cells.push({ k: `${D.systemDrive} 남은 공간`, v: size(D.systemFree), s: `전체 ${size(D.systemTotal)}`, cls: D.systemFree < 10 * GB ? "warn" : "" });
+    cells.push({ k: "옮길 수 있는 앱 데이터", v: size(totalLocal), s: apps.filter(a => a.installed && a.local > 0).map(a => `${a.title} ${size(a.local)}`).join(" · ") || "옮길 데이터 없음" });
+    cells.push({ k: "다 옮기고 이전 사본을 지우면", v: size(D.systemFree + totalLocal), s: `${D.systemDrive} 남은 공간(예상)`, cls: "good" });
+    if (target) cells.push({
+      k: `대상 드라이브 ${target.letter}`, v: size(target.free) + " 남음",
+      s: !target.usable ? `${target.fileSystem} 형식이라 쓸 수 없음 (NTFS 필요)` : spaceOk ? `${target.type} · 공간 충분` : `${target.type} · 공간 부족: 약 ${size(needed)} 필요`,
+      cls: !target.usable || !spaceOk ? "bad" : "good" });
+    else cells.push({ k: "대상 드라이브", v: "고르지 않음", s: "앱의 홈 › 대상 드라이브에서 고르세요", cls: "warn" });
+    if (D.pendingBackups > 0) cells.push({ k: `${D.systemDrive} 에 남은 이전 사본`, v: D.pendingBackups + "개", s: "지워야 공간이 비워집니다", cls: "warn" });
+    facts.innerHTML = `<div class="facts-head"><strong>이 PC 측정값</strong><span>${esc(D.pc)} · ${esc(D.measuredAt)} 기준 · 앱에서 다시 열면 새로 잽니다</span></div>
+      <div class="fgrid">${cells.map(c => `<div class="f ${c.cls || ""}"><div class="k">${esc(c.k)}</div><div class="v">${esc(c.v)}</div><div class="s">${esc(c.s)}</div></div>`).join("")}</div>`;
+  }
+
+  // ---------------------------------------------------------------- 앱 노드 (작은 것부터, 측정값이 없으면 기본 순서)
+  const APP_INFO = {
+    gemini: { title: "Gemini", proc: "Gemini" },
+    codex: { title: "Codex", proc: "Codex(ChatGPT)" },
+    claude: { title: "Claude", proc: "Claude" },
+  };
+  let order = ["gemini", "codex", "claude"];
+  if (D) order = apps.map(a => a.id).filter(id => APP_INFO[id] || true).sort((x, y) => (app(x).local || 0) - (app(y).local || 0));
+
+  const appNode = id => {
+    const a = app(id), info = APP_INFO[id] || { title: a ? a.title : id, proc: a ? a.title : id };
+    const title = a ? a.title : info.title;
+    const n = { id: "move-" + id, title: `${title} 옮기기`, chips: [], where: `<b>홈</b> › ${esc(title)} 카드 › <b>선택한 항목 옮기기</b>`, steps: [] };
+    if (a) {
+      if (!a.installed) { n.skip = true; n.chips.push(["설치 안 됨", ""]); n.steps.push("이 PC 에는 설치되어 있지 않아 건너뜁니다. 새로 설치할 때 처음부터 대상 드라이브에 두려면 <b>앱 설치</b> 화면을 쓰세요."); return n; }
+      if (a.local === 0 && a.relocated > 0) { n.skip = true; n.chips.push(["이미 옮김", "good"]); n.steps.push(`이미 옮겼습니다(${size(a.relocated)}). 할 일 없음.`); return n; }
+      if (a.local === 0) { n.skip = true; n.chips.push(["옮길 데이터 없음", ""]); n.steps.push("C: 에 옮길 데이터가 없습니다."); return n; }
+      n.title += ` · ${size(a.local)}`;
+      n.chips.push([`예상 ${a.local > 10 * GB ? "10분 이상" : a.local > 2 * GB ? "몇 분" : "1분 내외"}`, ""]);
+      if (a.running) n.chips.push(["지금 실행 중", "warn"]);
+      if (a.unreadable > 0) n.chips.push([`읽을 수 없는 폴더 ${a.unreadable}개`, "bad"]);
+    }
+    n.steps.push("옮길 항목의 체크를 확인하고 <b>선택한 항목 옮기기</b> → <b>옮기기</b>.");
+    n.steps.push(`${esc(info.proc)} 이(가) 켜져 있으면 종료할지 묻습니다. <b>종료하고 계속</b>.`);
+    n.steps.push("진행 창의 단계(앱 종료 → 복사 → 변경분 반영 → 검증 → 연결)가 모두 ✓ 이면 닫고, 앱을 실행해 그대로인지 확인.");
+    if (!a || a.unreadable > 0) {
+      n.kind = "decision";
+      n.branches = [
+        { yes: true, label: "멈춤", text: `'읽을 수 없는 폴더가 있어 멈췄습니다'가 뜨면${a ? ` (이 PC: ${a.unreadable}개)` : ""} <b>권한 정리</b> → 관리자 확인 '예' → 다시 <b>선택한 항목 옮기기</b>. 원본은 그대로입니다.` },
+        { yes: false, label: "통과", text: "그대로 완료." } ];
+    }
+    if (id === "claude") { n.kind = n.kind || "warn"; n.note = "Claude 앱을 닫아야 합니다. Claude 앱 안에서 하던 대화(Claude Code 포함)도 끊기므로 마친 뒤에 하세요. 서비스를 멈출 수 없다는 경고 뒤 복사가 실패하면 <b>관리자 권한으로 다시 시작</b> 후 같은 작업(이어서 진행)."; }
+    return n;
+  };
+
+  // ---------------------------------------------------------------- 단계 정의
+  const PHASES = [
+    { id: "prep", n: "1", title: "준비", sub: "5분", color: "var(--prep)", nodes: [
+      { id: "pick", title: "옮길 드라이브 고르기", where: "<b>홈</b> › 대상 드라이브",
+        chips: target ? [[`${target.letter} ${target.type}`, target.usable && spaceOk ? "good" : "bad"]] : [],
+        steps: ["C: 가 아닌 NTFS 드라이브면 내장(D: 등)·외장(USB) 모두 됩니다.", "목록에 드라이브 종류와 남은 공간이 함께 보입니다. 옮길 데이터보다 넉넉한 곳을 고르세요."],
+        measure: D ? (target ? `옮길 데이터 ${size(totalLocal)} → 필요 약 ${size(needed)}. ${target.letter} 남은 공간 ${size(target.free)}${spaceOk ? " — 충분합니다." : " — 부족합니다. 다른 드라이브를 고르거나 일부 앱만 옮기세요."}` : "아직 대상 드라이브를 고르지 않았습니다.") : null },
+      { id: "ntfs", title: "NTFS 형식인지 확인", kind: target && !target.usable ? "warn" : undefined, where: "탐색기 › 드라이브 우클릭 › 속성 › 파일 시스템",
+        chips: target ? [[target.fileSystem || "?", target.usable ? "good" : "bad"]] : [],
+        steps: ["NTFS 이면 통과(앱이 자동으로 확인합니다).", "exFAT/FAT32 라면 내용을 백업한 뒤 디스크 관리에서 NTFS 로 포맷."], note: target && !target.usable ? "지금 고른 드라이브는 이 형식으로는 쓸 수 없습니다. 포맷하면 내용이 모두 지워집니다." : null },
+      { id: "power", title: "노트북이면 전원 연결", steps: ["큰 폴더를 옮기는 동안 꺼지지 않게. AppRelocator 는 작업 중 잠자기를 막습니다."] },
+      { id: "preview", title: "미리보기로 한 번 확인 (선택)", where: "<b>설정</b> › 미리보기 모드",
+        steps: ["미리보기 모드 켜기 → 아무 앱이나 <b>선택한 항목 옮기기</b> → 무엇을 할지만 보여 줌.", "확인했으면 미리보기 모드 끄기."] },
+    ]},
+    { id: "move", n: "2", title: "옮기기", sub: D ? `${size(totalLocal)} · 작은 것부터` : "앱마다 한 번", color: "var(--move)", nodes: order.map(appNode) },
+    { id: "clean", n: "3", title: "C: 공간 비우기", sub: D ? `약 ${size(totalLocal)} 확보` : "확인 후", color: "var(--clean)", nodes: [
+      { id: "verify", title: "앱이 잘 되는지 확인", where: "<b>기록</b>",
+        steps: ["옮긴 앱을 하나씩 실행해 로그인·대화·설정이 그대로인지 확인.", "기록에서 모든 항목이 '정상'인지 확인."] },
+      { id: "delete-bak", title: "이전 사본 지우기", where: "<b>홈</b> 위쪽 안내 또는 <b>기록</b> › <b>이전 사본 지우기</b>",
+        chips: D && D.pendingBackups > 0 ? [[`남은 사본 ${D.pendingBackups}개`, "warn"]] : [],
+        steps: ["이때 C: 공간이 실제로 비워집니다.", "하루 이틀 써 보고 지워도 됩니다. 지우기 전까지는 대상 드라이브가 고장 나도 C: 로 되돌릴 수 있습니다."],
+        measure: D ? `다 옮기고 지우면 ${D.systemDrive} 남은 공간이 ${size(D.systemFree)} → 약 ${size(D.systemFree + totalLocal)} 이 됩니다.` : null },
+    ]},
+    { id: "ext", n: "4", title: "외장(USB) 드라이브일 때", sub: detachable === false ? `${target.letter} 는 내장이라 필요 없음` : "분리형 드라이브로 옮긴 경우만",
+      color: "var(--ext)", dim: detachable === false, nodes: [
+      { id: "autostart", title: "앱 자동 실행 끄기", where: "<b>진단·복구</b> › <b>시작 프로그램 설정 열기</b>",
+        chips: D ? apps.filter(a => a.autostart).map(a => [`${a.title} 자동 실행 켜짐`, "warn"]) : [],
+        steps: ["Windows 설정의 시작 프로그램에서 데이터를 옮긴 앱을 끕니다.", "드라이브를 연결하기 전에 앱이 켜져 C: 에 새 폴더를 만드는 것을 막습니다."] },
+      { id: "daily", title: "평소: 연결 → 앱 → 닫기 → 꺼내기", where: "<b>홈</b> › <b>드라이브 꺼내기</b>",
+        steps: ["드라이브를 먼저 연결하고 앱을 실행합니다. 드라이브 문자가 바뀌어도 자동으로 연결됩니다.", "끝나면 앱을 닫고 드라이브 꺼내기 → '안전하게 꺼냈습니다' 뒤 분리."] },
+      { id: "forgot", title: "드라이브 없이 앱을 켰다면", kind: "warn", where: "<b>진단·복구</b> › <b>옮긴 데이터로 다시 연결</b>",
+        steps: ["다음에 연결하면 '연결이 일반 폴더로 바뀜'이 나타납니다. 버튼 한 번으로 다시 연결(그사이 생긴 폴더는 보관)."] },
+      { id: "other-pc", title: "다른 PC 에서도 쓰기 (선택)", where: "<b>홈</b> › <b>다른 PC 에서도 쓰기</b>",
+        steps: ["드라이브에 AppRelocator 사본과 안내문을 넣습니다.", "다른 PC 에서는 AppRelocator 를 설치하고, 그 PC 의 앱에 한 번 로그인한 뒤 같은 드라이브로 옮깁니다. PC 마다 폴더가 따로 생겨 섞이지 않습니다."] },
+    ]},
+  ];
+
+  const TROUBLE = [
+    ["진행 창에 빨간 ✕ 와 '이렇게 해 보세요'", "안내된 버튼(<b>권한 정리</b> · <b>관리자로 다시 시작</b> · <b>Windows 보안 열기</b> · <b>다시 시도</b>)을 누릅니다."],
+    ["중간에 PC 가 꺼지거나 취소함", "같은 작업을 다시 누르면 <b>이어서</b> 진행. 또는 진단·복구 › 이어서 진행."],
+    ["공간이 부족하다고 나옴", "여유 공간이 더 큰 드라이브를 고르거나, 앱을 하나씩 나눠 옮기세요."],
+    ["'사용 중'이라 옮길 수 없음", "그 폴더를 연 탐색기·편집기·터미널을 닫고 <b>다시 시도</b>."],
+    ["NTFS 가 아니라고 나옴", "백업 후 디스크 관리에서 NTFS 로 포맷(도움말 › NTFS)."],
+    ["드라이브가 잠겨 있음(BitLocker)", "<b>잠금 해제</b> 버튼 → 탐색기에서 암호 입력."],
+    ["'Windows 보안이 차단' 알림", "Windows 보안 › 랜섬웨어 방지 › 허용 앱에 AppRelocator 추가."],
+    ["옮긴 드라이브가 고장 나거나 없어짐", "진단·복구 › <b>C: 이전 사본으로 되돌리기</b> (이전 사본을 지우지 않았을 때만)."],
+    ["그 밖의 문제", "도움말(<b>F1</b>) 검색, 설정 › 로그 폴더의 오늘 날짜 로그 확인."],
+  ];
+
+  // ---------------------------------------------------------------- 그리기
+  const KEY = "apprelocator-procedure-v2" + (D ? "-" + D.pc : "");
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { done = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} };
+  const counted = n => !n.skip;
+  const el = (tag, attrs, html) => { const x = document.createElement(tag); if (attrs) for (const k in attrs) x.setAttribute(k, attrs[k]); if (html != null) x.innerHTML = html; return x; };
+
+  const ov = document.getElementById("overview");
+  PHASES.forEach((p, i) => {
+    const a = el("a", { class: "phase-link", href: "#" + p.id });
+    a.innerHTML = `<span class="phase-dot" style="background:${p.color}">${p.n}</span><span style="min-width:0"><strong>${p.title}</strong><span>${esc(p.sub)}</span></span><span class="count" data-count="${p.id}"></span>`;
+    ov.appendChild(a);
+    if (i < PHASES.length - 1) ov.appendChild(el("span", { class: "arrow", "aria-hidden": "true" }, "→"));
+  });
+
+  const lanes = document.getElementById("lanes");
+  PHASES.forEach(p => {
+    const lane = el("section", { class: "lane" + (p.dim ? " dim" : ""), id: p.id, style: `--c:${p.color}`, "aria-labelledby": "h-" + p.id });
+    lane.appendChild(el("div", { class: "lane-head" }, `<h2 id="h-${p.id}">${p.n}. ${p.title}</h2><p>${esc(p.sub)}</p>`));
+    const ol = el("ol", { class: "flow" });
+    p.nodes.forEach((n, i) => {
+      const li = el("li", { class: `node kind-${n.kind || "step"}${n.skip ? " skip" : ""}`, "data-id": n.id });
+      const chips = (n.chips || []).map(([t, c]) => `<span class="chip ${c}">${esc(t)}</span>`);
+      if (n.kind === "warn") chips.push(`<span class="chip warn">주의</span>`);
+      if (n.kind === "decision") chips.push(`<span class="chip">갈림길</span>`);
+      let detail = "";
+      if (n.where) detail += `<div class="where">어디서: ${n.where}</div>`;
+      if (n.steps) detail += `<ol>${n.steps.map(s => `<li>${s}</li>`).join("")}</ol>`;
+      if (n.branches) detail += `<div class="branches">${n.branches.map(b => `<div class="branch ${b.yes ? "yes" : "no"}"><span>${b.label}</span><span>${b.text}</span></div>`).join("")}</div>`;
+      if (n.measure) detail += `<div class="measure">이 PC: ${esc(n.measure)}</div>`;
+      if (n.note) detail += `<div class="note">${n.note}</div>`;
+      if (!n.skip) detail += `<label class="check"><input type="checkbox"> 이 단계를 마쳤습니다</label>`;
+      li.innerHTML = `<div class="card">
+        <button class="node-head" type="button" aria-expanded="false" aria-controls="d-${n.id}">
+          <span class="badge"><b>${i + 1}</b></span>
+          <span style="min-width:0"><span class="node-title">${esc(n.title)}</span>${chips.length ? `<span class="node-meta">${chips.join("")}</span>` : ""}</span>
+          <span class="chev" aria-hidden="true">▾</span>
+        </button>
+        <div class="detail" id="d-${n.id}">${detail}</div></div>`;
+      ol.appendChild(li);
+    });
+    lane.appendChild(ol);
+    lanes.appendChild(lane);
+  });
+
+  const tg = document.getElementById("tgrid");
+  TROUBLE.forEach(([s, a]) => tg.appendChild(el("div", { class: "t" }, `<div class="sym">${s}</div><div class="act">${a}</div>`)));
+
+  const setOpen = (li, open) => { li.classList.toggle("open", open); li.querySelector(".node-head").setAttribute("aria-expanded", String(open)); };
+  document.querySelectorAll(".node").forEach(li => {
+    const id = li.dataset.id, cb = li.querySelector("input[type=checkbox]");
+    li.querySelector(".node-head").addEventListener("click", () => setOpen(li, !li.classList.contains("open")));
+    if (!cb) return;
+    cb.checked = !!done[id];
+    li.classList.toggle("is-done", cb.checked);
+    cb.addEventListener("change", () => { done[id] = cb.checked; li.classList.toggle("is-done", cb.checked); save(); update(); });
+  });
+  const firstOpen = [...document.querySelectorAll(".node:not(.skip)")].find(li => !done[li.dataset.id]);
+  if (firstOpen) setOpen(firstOpen, true);
+
+  document.getElementById("expandAll").onclick = () => document.querySelectorAll(".node").forEach(li => setOpen(li, true));
+  document.getElementById("collapseAll").onclick = () => document.querySelectorAll(".node").forEach(li => setOpen(li, false));
+  const resetBtn = document.getElementById("reset");
+  let armed = false;
+  resetBtn.onclick = () => {
+    if (!armed) { armed = true; resetBtn.textContent = "한 번 더 누르면 초기화"; setTimeout(() => { armed = false; resetBtn.textContent = "체크 초기화"; }, 3000); return; }
+    done = {}; save();
+    document.querySelectorAll(".node input[type=checkbox]").forEach(c => c.checked = false);
+    document.querySelectorAll(".node").forEach(li => li.classList.remove("is-done"));
+    armed = false; resetBtn.textContent = "체크 초기화"; update();
+  };
+
+  function update() {
+    const live = PHASES.filter(p => !p.dim).flatMap(p => p.nodes.filter(counted));
+    const n = live.filter(x => done[x.id]).length;
+    const pct = live.length ? Math.round(n / live.length * 100) : 0;
+    document.getElementById("pct").textContent = pct + "%";
+    document.getElementById("cnt").textContent = `${n} / ${live.length} 단계`;
+    document.getElementById("barfill").style.width = pct + "%";
+    PHASES.forEach(p => {
+      const ns = p.nodes.filter(counted);
+      document.querySelector(`[data-count="${p.id}"]`).textContent = p.dim ? "해당 없음" : `${ns.filter(x => done[x.id]).length}/${ns.length}`;
+    });
+  }
+  update();
+})();
+</script>
+
+</body>
+</html>
