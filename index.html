@@ -155,7 +155,7 @@ a.btn { text-decoration: none; display: inline-block; }
 <div class="wrap">
   <header class="top">
     <div>
-      <p class="eyebrow">Codex · Claude · Gemini 데이터로 꽉 찬 C: 비우기</p>
+      <p class="eyebrow">AI 앱 데이터로 꽉 찬 C: 비우기</p>
       <h1>AppRelocator 사용 절차 지도</h1>
       <p class="lede">준비 → 옮기기 → C: 공간 비우기 순서로 진행합니다. 노드를 누르면 할 일과 누를 버튼이 펼쳐지고, 끝낸 노드에 체크하면 진행률이 올라갑니다(이 브라우저에만 저장).</p>
     </div>
@@ -266,7 +266,7 @@ const MEASURE_LINK = "apprelocator://measure";
     codex: { title: "Codex", proc: "Codex(ChatGPT)" },
     claude: { title: "Claude", proc: "Claude" },
   };
-  let order = ["gemini", "codex", "claude"];
+  let order = ["gemini", "codex", "claude", "aside", "ego"];
   if (D) order = apps.map(a => a.id).filter(id => APP_INFO[id] || true).sort((x, y) => (app(x).local || 0) - (app(y).local || 0));
 
   const appNode = id => {
