@@ -162,6 +162,7 @@ a.btn { text-decoration: none; display: inline-block; }
     <a class="btn on" href="#" aria-current="page">사용 절차 지도</a>
     <a class="btn" href="how-it-works.html">작동 원리 — 옮긴 앱은 어떻게 실행·업데이트되나요?</a>
     <a class="btn dl" href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">⬇ AppRelocator 다운로드 <span class="mono" data-ver></span></a>
+    <a class="btn dl" href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Portable.exe" title="설치 없이 바로 실행하는 파일 하나">⬇ 포터블 (exe)</a>
   </nav>
   <header class="top">
     <div>
@@ -263,7 +264,7 @@ const MEASURE_LINK = "apprelocator://measure";
     facts.innerHTML = `<div class="facts-head"><strong>이 PC 를 분석해 볼까요?</strong></div>
       <p class="nodata">지금은 숫자 없는 일반 안내입니다. <b>이 PC 분석하기</b>를 누르면 설치된 AppRelocator 가 이 PC 의 앱별 용량·남은 공간·주의할 점을 재서 이 페이지에 채웁니다. 브라우저가 "AppRelocator 를 열까요?"라고 물으면 <b>열기</b>를 누르세요.</p>
       <div class="tools"><a class="btn primary" href="${measureHref}">이 PC 분석하기</a></div>
-      <p class="nodata">아무 반응이 없으면 AppRelocator 가 설치되지 않은 것입니다. <a href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">설치 파일 받기</a>(Windows 10·11, 관리자 권한 불필요) 후 다시 누르세요.</p>`;
+      <p class="nodata">아무 반응이 없으면 AppRelocator 가 설치되지 않은 것입니다. <a href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Setup.exe">설치 파일 받기</a>(Windows 10·11, 관리자 권한 불필요) 후 다시 누르세요. 설치 없이 쓰려면 <a href="https://github.com/sysmetrix/app-relocator-guide/releases/latest/download/AppRelocator-Portable.exe">포터블 exe</a> 를 받아 실행하세요(포터블에서는 이 버튼 대신 앱 홈 화면에 이 PC 의 용량이 나옵니다).</p>`;
   } else {
     const cells = [];
     cells.push({ k: `${D.systemDrive} 남은 공간`, v: size(D.systemFree), s: `전체 ${size(D.systemTotal)}`, cls: D.systemFree < 10 * GB ? "warn" : "" });
