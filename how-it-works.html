@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AppRelocator 작동 원리</title>
+<meta name="description" content="옮긴 앱이 대상 드라이브에서 실행되고 업데이트되는 원리, 앱별 방식, 주의할 점과 확인된 범위">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 절차 지도(index.html)와 같은 색·글꼴 체계. 위에서 아래로: 요약 → 연결 원리 그림 → 앱별 방식 → 업데이트 흐름 → 주의할 점 → 확인된 범위 */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #18212d; --muted: #5b6676; --line: #d5dbe3;
+  --accent: #1f5fbf; --c-drive: #6b7380; --d-drive: #12805c; --link: #1f5fbf; --app: #7a4cc2;
+  --warn: #a35d00; --warn-bg: #fff4e0; --ok: #12805c; --ok-bg: #e6f4ee; --no: #b3261e; --no-bg: #fdecea; --chip: #eef1f5;
+  --font-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161d; --surface: #19202a; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3644;
+    --accent: #7fb0ff; --c-drive: #9aa3b0; --d-drive: #5fd0a4; --link: #7fb0ff; --app: #b99af0;
+    --warn: #f0b45c; --warn-bg: #2d2416; --ok: #5fd0a4; --ok-bg: #16302a; --no: #ff8a80; --no-bg: #3a1d1b; --chip: #222b37;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161d; --surface: #19202a; --ink: #e6ebf2; --muted: #9aa6b6; --line: #2c3644;
+  --accent: #7fb0ff; --c-drive: #9aa3b0; --d-drive: #5fd0a4; --link: #7fb0ff; --app: #b99af0;
+  --warn: #f0b45c; --warn-bg: #2d2416; --ok: #5fd0a4; --ok-bg: #16302a; --no: #ff8a80; --no-bg: #3a1d1b; --chip: #222b37;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.65; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem); letter-spacing: -0.01em; }
+h2 { font-size: 1.2rem; margin-bottom: 10px; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 70ch; margin-top: 8px; }
+.eyebrow { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mono, code { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--chip); padding: 1px 6px; border-radius: 4px; word-break: break-all; }
+a { color: var(--accent); }
+nav.top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+nav.top .links { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; border-radius: 99px; padding: 4px 12px; font-size: 0.86rem; }
+.pill.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+section { margin-top: 36px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.answer { border-left: 4px solid var(--d-drive); }
+.answer strong { font-size: 1.05rem; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.diagram { overflow-x: auto; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.diagram text { font-family: var(--font-body); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font-size: 0.8rem; color: var(--muted); font-weight: 600; letter-spacing: 0.02em; }
+td:first-child { font-weight: 600; white-space: nowrap; }
+ol.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: n; }
+ol.notes li { counter-increment: n; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 12px 52px; position: relative; min-width: 0; }
+ol.notes li::before { content: counter(n); position: absolute; left: 14px; top: 12px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; font-size: 0.82rem; border: 2px solid var(--warn); color: var(--warn); }
+ol.notes h3 { margin-bottom: 2px; }
+ol.notes p { color: var(--muted); font-size: 0.92rem; }
+.status { display: grid; gap: 8px; }
+.st { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; }
+.tag { font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.no { background: var(--no-bg); color: var(--no); }
+.tag.part { background: var(--warn-bg); color: var(--warn); }
+.foot { margin-top: 40px; color: var(--muted); font-size: 0.86rem; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top" aria-label="안내 페이지">
+    <span class="eyebrow">AppRelocator 안내</span>
+    <span class="links">
+      <a class="pill" href="index.html">사용 절차 지도</a>
+      <a class="pill on" href="how-it-works.html" aria-current="page">작동 원리</a>
+    </span>
+  </nav>
+
+  <header>
+    <h1>옮긴 앱은 대상 드라이브에서 실행되고 업데이트됩니다</h1>
+    <p class="lede">AppRelocator 로 프로그램과 데이터를 D: 같은 대상 드라이브로 옮기면, 앱은 아무것도 바꾸지 않은 채 그대로 실행되고 새 파일과 업데이트도 대상 드라이브에 저장됩니다. 그 원리와 앱별 방식, 알아 둘 점, 그리고 지금까지 확인된 범위를 정리했습니다.</p>
+  </header>
+
+  <section aria-labelledby="s-answer">
+    <h2 id="s-answer" class="eyebrow">한 줄 답</h2>
+    <div class="card answer">
+      <p><strong>네. 앱은 예전 경로(C:)를 그대로 열지만 Windows 가 그 경로를 대상 드라이브로 이어 주므로, 실행·저장·업데이트가 모두 대상 드라이브에서 일어납니다.</strong></p>
+      <p class="lede" style="margin-top:6px">단, 업데이트가 연결을 깨는 드문 경우와 C: 에 조금 남는 것이 있어 아래 "알아 둘 점"을 함께 보세요.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-how">
+    <h2 id="s-how">연결(디렉터리 정션)의 원리</h2>
+    <div class="card diagram" role="img" aria-label="앱이 C 드라이브의 원래 경로를 열면 연결을 거쳐 D 드라이브의 실제 폴더가 열리는 그림">
+      <svg viewBox="0 0 900 270" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--link)"/>
+          </marker>
+        </defs>
+        <!-- 앱 -->
+        <rect x="20" y="40" width="200" height="74" rx="10" style="fill:var(--surface);stroke:var(--app);stroke-width:2"/>
+        <text x="120" y="70" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:15px">앱 · 업데이트 프로그램</text>
+        <text x="120" y="94" text-anchor="middle" style="fill:var(--muted);font-size:12px">경로를 바꾸지 않음</text>
+        <!-- C: 연결 -->
+        <rect x="320" y="20" width="250" height="114" rx="10" style="fill:var(--surface);stroke:var(--c-drive);stroke-width:2;stroke-dasharray:6 5"/>
+        <text x="445" y="46" text-anchor="middle" style="fill:var(--c-drive);font-weight:700;font-size:13px">C: (원래 자리)</text>
+        <text x="445" y="74" text-anchor="middle" style="fill:var(--ink);font-size:13px;font-family:var(--font-mono)">…\User Data</text>
+        <text x="445" y="98" text-anchor="middle" style="fill:var(--muted);font-size:12px">연결만 남음 · 용량 0</text>
+        <text x="445" y="118" text-anchor="middle" style="fill:var(--muted);font-size:12px">이전 사본(.relocator-bak)은 지우면 공간 확보</text>
+        <!-- D: 실제 -->
+        <rect x="660" y="20" width="220" height="114" rx="10" style="fill:var(--surface);stroke:var(--d-drive);stroke-width:2.5"/>
+        <text x="770" y="46" text-anchor="middle" style="fill:var(--d-drive);font-weight:700;font-size:13px">D: (대상 드라이브)</text>
+        <text x="770" y="74" text-anchor="middle" style="fill:var(--ink);font-size:12px;font-family:var(--font-mono)">AppRelocator\pcs\&lt;PC&gt;\…</text>
+        <text x="770" y="98" text-anchor="middle" style="fill:var(--ink);font-size:12px">실제 파일이 있는 곳</text>
+        <text x="770" y="118" text-anchor="middle" style="fill:var(--muted);font-size:12px">읽기·쓰기·새 버전 모두 여기</text>
+        <!-- 화살표 -->
+        <line x1="222" y1="77" x2="316" y2="77" style="stroke:var(--link);stroke-width:2.5" marker-end="url(#arr)"/>
+        <text x="269" y="68" text-anchor="middle" style="fill:var(--muted);font-size:12px">C:\… 열기</text>
+        <line x1="572" y1="77" x2="656" y2="77" style="stroke:var(--link);stroke-width:2.5" marker-end="url(#arr)"/>
+        <text x="614" y="68" text-anchor="middle" style="fill:var(--muted);font-size:12px">Windows 가</text>
+        <text x="614" y="102" text-anchor="middle" style="fill:var(--muted);font-size:12px">이어 줌</text>
+        <!-- 아래 설명 -->
+        <rect x="20" y="170" width="860" height="80" rx="10" style="fill:var(--chip)"/>
+        <text x="40" y="200" style="fill:var(--ink);font-size:13px">• 드라이브 문자가 아니라 볼륨 ID 로 연결하므로, 외장 드라이브가 E: → F: 로 바뀌어도 그대로 이어집니다.</text>
+        <text x="40" y="226" style="fill:var(--ink);font-size:13px">• 앱 안에서는 아무것도 바뀌지 않아 따로 설정할 것이 없고, AppRelocator 를 지워도 연결은 그대로 동작합니다.</text>
+      </svg>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-apps">
+    <h2 id="s-apps">앱별로 옮기는 방식</h2>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr><th>앱</th><th>프로그램</th><th>데이터</th><th>업데이트는 어디에</th></tr></thead>
+        <tbody>
+          <tr><td>Codex · Claude</td><td>Windows 공식 기능(앱 이동·앱 저장소)으로 대상 드라이브의 <code>WindowsApps</code> 에 둠. 시스템 서비스 때문에 Windows 가 이동을 거부할 수 있음</td><td>연결</td><td>Windows 가 같은 드라이브에 새 버전 설치</td></tr>
+          <tr><td>Gemini</td><td>설치 폴더를 미리 대상 드라이브에 연결한 뒤 설치</td><td>연결</td><td>업데이트 프로그램이 연결된 폴더에 씀 → 대상 드라이브</td></tr>
+          <tr><td>Aside · ego(lite)</td><td>공식 설치기로 설치한 뒤 Program Files 의 <code>Application</code> 폴더를 대상 드라이브로 옮기고 연결(관리자 권한)</td><td>연결</td><td><code>Application</code> 안에 새 버전 폴더가 생김 → 대상 드라이브</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-update">
+    <h2 id="s-update">업데이트가 지나가는 길</h2>
+    <div class="card diagram" role="img" aria-label="업데이트 프로그램이 원래 경로에 새 버전을 쓰면 연결을 통해 대상 드라이브에 저장되고, 드물게 폴더를 통째로 바꾸면 진단 복구가 찾아 다시 연결하는 흐름">
+      <svg viewBox="0 0 900 230" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--link)"/>
+          </marker>
+        </defs>
+        <rect x="20" y="30" width="170" height="60" rx="10" style="fill:var(--surface);stroke:var(--app);stroke-width:2"/>
+        <text x="105" y="58" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:14px">새 버전 받음</text>
+        <text x="105" y="78" text-anchor="middle" style="fill:var(--muted);font-size:12px">앱의 자동 업데이트</text>
+        <rect x="260" y="30" width="190" height="60" rx="10" style="fill:var(--surface);stroke:var(--c-drive);stroke-width:2;stroke-dasharray:6 5"/>
+        <text x="355" y="58" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:14px">C:\…\Application</text>
+        <text x="355" y="78" text-anchor="middle" style="fill:var(--muted);font-size:12px">원래 경로에 씀</text>
+        <rect x="520" y="30" width="170" height="60" rx="10" style="fill:var(--ok-bg);stroke:var(--d-drive);stroke-width:2.5"/>
+        <text x="605" y="58" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:14px">D: 에 저장</text>
+        <text x="605" y="78" text-anchor="middle" style="fill:var(--muted);font-size:12px">보통은 여기서 끝</text>
+        <line x1="192" y1="60" x2="256" y2="60" style="stroke:var(--link);stroke-width:2.5" marker-end="url(#arr2)"/>
+        <line x1="452" y1="60" x2="516" y2="60" style="stroke:var(--link);stroke-width:2.5" marker-end="url(#arr2)"/>
+        <!-- 드문 경우 -->
+        <rect x="260" y="140" width="190" height="64" rx="10" style="fill:var(--warn-bg);stroke:var(--warn);stroke-width:2"/>
+        <text x="355" y="166" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:13px">드물게: 폴더를 통째로</text>
+        <text x="355" y="186" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:13px">지우고 새로 만듦</text>
+        <rect x="520" y="140" width="190" height="64" rx="10" style="fill:var(--surface);stroke:var(--accent);stroke-width:2"/>
+        <text x="615" y="166" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:13px">진단·복구가 찾음</text>
+        <text x="615" y="186" text-anchor="middle" style="fill:var(--muted);font-size:12px">"연결이 일반 폴더로 바뀜"</text>
+        <rect x="740" y="140" width="140" height="64" rx="10" style="fill:var(--ok-bg);stroke:var(--d-drive);stroke-width:2"/>
+        <text x="810" y="166" text-anchor="middle" style="fill:var(--ink);font-weight:700;font-size:13px">다시 D: 로</text>
+        <text x="810" y="186" text-anchor="middle" style="fill:var(--muted);font-size:12px">버튼 한 번</text>
+        <line x1="355" y1="92" x2="355" y2="136" style="stroke:var(--warn);stroke-width:2;stroke-dasharray:5 4" marker-end="url(#arr2)"/>
+        <line x1="452" y1="172" x2="516" y2="172" style="stroke:var(--link);stroke-width:2.5" marker-end="url(#arr2)"/>
+        <line x1="712" y1="172" x2="736" y2="172" style="stroke:var(--link);stroke-width:2.5" marker-end="url(#arr2)"/>
+      </svg>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-notes">
+    <h2 id="s-notes">알아 둘 점</h2>
+    <ol class="notes">
+      <li><h3>업데이트가 연결을 깨는 경우</h3><p>드물게 업데이트 프로그램이 폴더를 통째로 지우고 새로 만들면, 연결이 일반 폴더로 바뀌어 다시 C: 에 쌓입니다. 큰 업데이트 뒤에는 AppRelocator 의 <b>진단·복구</b>를 열어 보세요. "연결이 일반 폴더로 바뀜"이 보이면 버튼 하나로 다시 대상 드라이브로 연결합니다(그사이 생긴 파일은 지우지 않고 보관).</p></li>
+      <li><h3>C: 에 조금은 남습니다</h3><p>연결 자체(용량 0), 시작 메뉴 바로 가기, 레지스트리 등록 정보, Aside·ego 의 업데이트 서비스 폴더(<code>Program Files (x86)\…\Updater</code>, 수십 MB), 임시 파일. 용량의 대부분인 프로그램과 데이터는 대상 드라이브에 있습니다.</p></li>
+      <li><h3>이전 사본을 지워야 C: 가 비워집니다</h3><p>옮긴 직후 원본은 <code>.relocator-bak</code> 으로 남습니다. 앱이 잘 되는지 확인한 뒤 <b>기록 › 이전 사본 지우기</b>. 지우기 전까지는 언제든 C: 로 되돌릴 수 있습니다.</p></li>
+      <li><h3>외장(USB) 드라이브라면 연결해 두어야 합니다</h3><p>대상 드라이브가 분리되어 있으면 옮긴 앱은 실행되지 않습니다. 앱의 로그인 자동 실행은 끄고, 끝나면 <b>드라이브 꺼내기</b>로 분리하세요. 내장 드라이브라면 해당 없습니다.</p></li>
+      <li><h3>속도는 대상 드라이브를 따릅니다</h3><p>느린 HDD·USB 로 옮기면 앱도 그만큼 느려집니다. SSD 끼리라면 차이가 거의 없습니다.</p></li>
+      <li><h3>스토어 앱 본체는 Windows 가 거부할 수 있습니다</h3><p>Codex·Claude 처럼 시스템 서비스가 들어 있는 앱은 Windows 가 본체 이동을 막을 수 있습니다. 그래도 용량의 대부분은 데이터라서 데이터만 옮겨도 대부분의 공간이 확보됩니다. Claude 는 처음 설치할 때 대상 드라이브에 바로 설치할 수 있습니다.</p></li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="s-status">
+    <h2 id="s-status">지금까지 확인된 범위 <span class="eyebrow">2026-10-20 기준 · v1.5.1</span></h2>
+    <div class="card status">
+      <div class="st"><span class="tag ok">확인</span><p>연결 만들기, 복사, 파일 수·크기 검증, 되돌리기, 중단 뒤 이어서 하기, 드라이브 문자 변경, 연결이 일반 폴더로 바뀐 경우의 복구 — 자동 테스트로 실제 파일 시스템에서 확인.</p></div>
+      <div class="st"><span class="tag ok">확인</span><p>Codex·Claude·Gemini·Aside·ego(lite) 의 설치 위치·데이터 폴더·실행 중 감지 — 실제 설치된 PC 에서 확인. 공식 설치 파일 주소와 게시자 서명 확인.</p></div>
+      <div class="st"><span class="tag part">일부</span><p>프로그램 폴더 옮기기(Gemini·Aside·ego) — 옮길 계획(미리보기)과 관리자 권한 확인까지 확인. 실제 앱을 옮긴 뒤 실행해 보는 시험은 아직.</p></div>
+      <div class="st"><span class="tag no">미확인</span><p>옮긴 뒤 앱의 자동 업데이트가 실제로 대상 드라이브에 새 버전을 쓰는지 — 다음 업데이트 때 진단·복구와 폴더 위치로 확인할 예정.</p></div>
+    </div>
+  </section>
+
+  <script>
+    // PC 에 설치된 안내(파일)에서는 절차 지도의 파일 이름이 다르다
+    if (location.protocol === "file:") document.querySelectorAll('a[href="index.html"]').forEach(a => a.href = "실행-절차서.html");
+  </script>
+  <p class="foot">AppRelocator 는 각 앱의 파일을 고치지 않고 Windows 기본 기능(디렉터리 정션, 앱 저장소)만 사용합니다. Codex·ChatGPT 는 OpenAI, Claude 는 Anthropic, Gemini 는 Google, Aside 는 At Your Side, ego(lite) 는 Citro Labs 의 상표이며 AppRelocator 는 각 회사와 관련이 없습니다.</p>
+</div>
+</body>
+</html>

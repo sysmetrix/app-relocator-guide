@@ -67,6 +67,9 @@ button { font: inherit; }
 .btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.86rem; }
 .btn:hover { border-color: var(--accent); }
 a.btn { text-decoration: none; display: inline-block; }
+.pages { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pages .btn { border-radius: 99px; }
+.pages .btn.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; padding: 7px 16px; font-size: 0.92rem; }
 .btn:focus-visible, .node-head:focus-visible, .phase-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -153,6 +156,10 @@ a.btn { text-decoration: none; display: inline-block; }
 
 
 <div class="wrap">
+  <nav class="pages" aria-label="안내 페이지">
+    <a class="btn on" href="#" aria-current="page">사용 절차 지도</a>
+    <a class="btn" href="how-it-works.html">작동 원리 — 옮긴 앱은 어떻게 실행·업데이트되나요?</a>
+  </nav>
   <header class="top">
     <div>
       <p class="eyebrow">AI 앱 데이터로 꽉 찬 C: 비우기</p>
